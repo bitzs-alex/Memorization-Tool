@@ -15,6 +15,7 @@ class Question(Base):
     id = Column(Integer, primary_key=True)
     question = Column(String)
     answer = Column(String)
+    box_number = Column(Integer, default=1)
 
 
 # Declaring global variable
@@ -122,6 +123,30 @@ def flashcard_updater(flashcard: Question) -> None:
         update_flashcard(flashcard)
 
 
+def update_card_box(card: Question) -> None:
+    menu = {
+        "y": "press \"y\" if your answer is correct",
+        "n": "press \"n\" if your answer is wrong"
+    }
+    choice = get_user_choice(menu)
+
+    if choice == "y":
+        if card.box_number == 3:
+            # remove from the box
+            exec_session.delete(card)
+        else:
+            # update the box_number
+            card.box_number += 1
+
+        # save the change
+        exec_session.commit()
+    elif choice == "n":
+        # bring the card back to box 1
+        card.box_number = 1
+        # save the change
+        exec_session.commit()
+
+
 def play_flashcard(flashcard: Question) -> None:
     print(" ")
     print("Question:", flashcard.question)
@@ -137,6 +162,7 @@ def play_flashcard(flashcard: Question) -> None:
     if choice == "y":
         print(" ")
         print("Answer:", flashcard.answer)
+        update_card_box(flashcard)
     elif choice == "u":
         flashcard_updater(flashcard)
 

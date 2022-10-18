@@ -16,7 +16,7 @@ stages:
   is_completed: true
 - id: 829
   step: 12261
-  is_completed: false
+  is_completed: true
 topics:
   0:
   - title: Introduction to Python
