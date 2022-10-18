@@ -390,5 +390,8 @@ files:
         FlashCardTest('memtool.step3').run_tests()
   learner_created: false
 feedback_link: https://hyperskill.org/learn/step/12260#comment
-status: Unchecked
+status: Solved
+feedback:
+  message: Congratulations!
+  time: Tue, 18 Oct 2022 08:33:36 UTC
 record: -1

@@ -27,43 +27,37 @@ exec_session = Session()
 Base.metadata.create_all(engine)
 
 
-def get_user_choice(menu: list) -> int:
-    choice = None
-
+def get_user_choice(menu: dict, is_numeric: bool = False) -> str:
     # show the menu with options
-    for key, option in enumerate(menu):
-        # add one when displaying the key
-        print(f"{key + 1}.", option)
+    for key, option in menu.items():
+        # present the options to the user
+        print(f"{key}. {option}" if is_numeric else f"{option}:")
 
-    # check for any parsing error
-    try:
-        choice = input()
-        choice = int(choice)
-    except ValueError:
-        pass
+    # get user choice, and let upper and lower cases
+    choice = input()
 
-    # break the loop if the condition is met
-    if type(choice) != int or 0 > choice or choice > len(menu):
+    # show error message if the choice isn't an option
+    if choice.lower() not in menu.keys():
         print(" ")
         print(f"{choice} is not an option")
 
-    return choice
+    return choice.lower()
 
 
-def get_main_menu_choice() -> int:
+def get_main_menu_choice() -> str:
     # defining main menu options
-    main_menu = ["Add flashcards", "Practice flashcards", "Exit"]
+    main_menu = {"1": "Add flashcards", "2": "Practice flashcards", "3": "Exit"}
 
     # getting user's choice
-    return get_user_choice(main_menu)
+    return get_user_choice(main_menu, is_numeric=True)
 
 
-def get_sub_menu_choice() -> int:
+def get_sub_menu_choice() -> str:
     # defining sub menu options
-    sub_menu = ["Add a new flashcard", "Exit"]
+    menu = {"1": "Add a new flashcard", "2": "Exit"}
 
     # getting user's choice
-    return get_user_choice(sub_menu)
+    return get_user_choice(menu, is_numeric=True)
 
 
 def get_flashcard() -> dict:
@@ -88,22 +82,63 @@ def get_flashcard() -> dict:
     return Question(**flashcard)
 
 
-def play_flashcard(flashcard: dict) -> None:
+def update_flashcard(card: Question) -> None:
+    # create a dictionary to store the input values
+    flashcard = {"question": "", "answer": ""}
+
+    # loop through keys and get the inputs
+    for key in flashcard.keys():
+        print(f"current {key}: {card.__dict__.get(key)}")
+        print(f"please write a new {key}:")
+        flashcard[key] = input().strip()
+
+    # filter only the keys with new value
+    flashcard = {key: value for key, value in flashcard.items() if value}
+
+    # save the change to the database
+    if len(flashcard):
+        # update using the primary id
+        exec_session.query(Question.id == card.id).update(flashcard)
+        exec_session.commit()
+
+
+def delete_flashcard(flashcard: Question) -> None:
+    # deleting the flashcard
+    exec_session.delete(flashcard)
+    # saving the change
+    exec_session.commit()
+
+
+def flashcard_updater(flashcard: Question) -> None:
+    menu = {
+        "d": "press \"d\" to delete the flashcard",
+        "e": "press \"e\" to edit the flashcard"
+    }
+    choice = get_user_choice(menu)
+
+    if choice == "d":
+        delete_flashcard(flashcard)
+    elif choice == "e":
+        update_flashcard(flashcard)
+
+
+def play_flashcard(flashcard: Question) -> None:
     print(" ")
     print("Question:", flashcard.question)
-    print("Please press \"y\" to see the answer or press \"n\" to skip:")
 
-    choice = input()
-
-    # accept capital or small letter options
-    if choice not in "YyNn":
-        print(" ")
-        print(f"{choice} is not an option")
+    menu = {
+        "y": "press \"y\" to see the answer",
+        "n": "press \"n\" to skip",
+        "u": "press \"u\" to update"
+    }
+    choice = get_user_choice(menu)
 
     # printing the answer
-    if choice in "Yy":
+    if choice == "y":
         print(" ")
         print("Answer:", flashcard.answer)
+    elif choice == "u":
+        flashcard_updater(flashcard)
 
 
 def practice_flashcards(flashcards) -> None:
@@ -124,13 +159,13 @@ def main() -> None:
         main_choice = get_main_menu_choice()
 
         # check user options
-        if main_choice == 3:
+        if main_choice == "3":
             print(" ")
             break
-        elif main_choice == 2:
+        elif main_choice == "2":
             cards = exec_session.query(Question).all()
             practice_flashcards(cards)
-        elif main_choice == 1:
+        elif main_choice == "1":
             # loop through sub menu until the user chose to exit
             while True:
                 print(" ")
@@ -138,9 +173,9 @@ def main() -> None:
                 sub_choice = get_sub_menu_choice()
 
                 # check user options
-                if sub_choice == 2:
+                if sub_choice == "2":
                     break
-                elif sub_choice == 1:
+                elif sub_choice == "1":
                     # adding the orm
                     exec_session.add(get_flashcard())
 
